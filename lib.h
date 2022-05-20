@@ -1,5 +1,3 @@
-#pragma once
-
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -13,8 +11,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#define PRD_MAX_LEN 10 // max length of product name
-#define SEM_DFF_LEN 3  // max length of semaphore id
+#define PRD_MAX_LEN 10 // longueur maximal du nom du produit
+#define SEM_DFF_LEN 3  // longueur maximal du nom du semaphore
 
 #define SEM_MAX_LEN PRD_MAX_LEN + SEM_DFF_LEN
 
@@ -40,13 +38,20 @@ struct magazin {
     int qty; // quantity of the product
 };
 
+
+/**
+ * @brief initialise magazin structure.
+ *
+ * @param s magazin structure
+ */
+void magazin_init(struct magazin *s);
+
+
 /**
  * @brief fonction raler traditionelle
  *
  */
 noreturn void raler(int syserr, const char *msg, ...);
-
-
 
 
 /**
@@ -57,12 +62,33 @@ noreturn void raler(int syserr, const char *msg, ...);
  * @param fmt formated product name (max `PRD_MAX_LEN` characters)
  */
 void set_sem(int id, char *restrict sem_name, char *restrict fmt, ...);
-      
 
+
+// pour client.c ////////////////////////////////////////////////////////////////////////   
+/**
+ * @brief grouper les produits .
+ *
+ * @param prd liste des noms des produits
+ * @param qty liste des quantités
+ * @param n nombre de produits
+ * @return nombre de produits
+ */
+int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qty, int n);
 
 /**
- * @brief initialise magazin structure.
+ * @brief acheter un produit du magazin.
  *
- * @param s magazin structure
+ * @param prd nom du produit
+ * @param qty quantite a acheter
+ * @return  nombre de prd restant
  */
-void magazin_init(struct magazin *s);
+int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) ;
+
+/**     
+ * @brief loop principale pour chaque produit on achete si le magazin est ouvert et que le stock le permet sinon on attend
+ * @param prd nom des produit
+ * @param qty quantite a acheter par produit
+ * @param nb_prod nombre de produit
+ */
+void shopping(char (*prd)[PRD_MAX_LEN + 1], int *qty , int n);
+
