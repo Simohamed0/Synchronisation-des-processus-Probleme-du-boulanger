@@ -2,39 +2,37 @@
 
 
 /**
- * @brief closes a shop by removing contents from the stock.
+ * @brief supprimer le contenue et supprimer le magazin
  *
- * @param prd product name
+ * @param prd nom du produit
  */
-void close_shop(char prd[PRD_MAX_LEN + 1]) {
+void fermer_magazin(char prd[PRD_MAX_LEN + 1]) {
     
     int fd;
 
-    // named semaphore, created if not existing
-    char sem_name[SEM_MAX_LEN + 1], cnd_name[SEM_MAX_LEN + 1];
-    set_sem(0, sem_name, prd);
-    set_sem(1, cnd_name, prd);
+    //  creation des semaphores
+    char sem_file_name[SEM_MAX_LEN + 1], sem_name[SEM_MAX_LEN + 1];
+    set_sem(0, sem_file_name, prd);
+    set_sem(1, sem_name, prd);
 
-    sem_t *sem, *cnd; // file protection, condition
-    sem = sem_open(sem_name, O_CREAT, 0666, 1);
-    cnd = sem_open(cnd_name, O_CREAT, 0666, 0);
+    sem_t *sem_file, *sem; // file protection, condition
+    sem_file = sem_open(sem_file_name, O_CREAT, 0666, 1);
+    sem = sem_open(sem_name, O_CREAT, 0666, 0);
 
-    TCHK(sem_wait(sem)); // wait for possible producer or customer
+    TCHK(sem_wait(sem_file)); // attendre un producteur ou un client 
 
-    CHK(fd = open(prd, O_RDWR | O_TRUNC, 0666)); // delete contents
-    CHK(close(fd));                              // close the file
-    CHK(unlink(prd));                            // remove the file
+    CHK(fd = open(prd, O_RDWR | O_TRUNC, 0666)); 
+    CHK(close(fd));                             
+    CHK(unlink(prd));                            
 
-    TCHK(sem_post(sem)); // unlock potential new producer or customer
-    TCHK(sem_post(cnd)); // signal the condition
+    TCHK(sem_post(sem_file)); 
+    TCHK(sem_post(sem)); 
 
-    CHK(sem_close(sem)); // close the semaphore
-    CHK(sem_close(cnd));
+    CHK(sem_close(sem_file)); //  fermer et effacer les semaphores
+    CHK(sem_close(sem));
+    CHK(sem_unlink(sem_file_name)); 
+    CHK(sem_unlink(sem_name));
 
-    CHK(sem_unlink(sem_name)); // remove the semaphore
-    CHK(sem_unlink(cnd_name));
-
-    
 }
 
 /**
@@ -57,7 +55,7 @@ void add_to_shop(char prd[PRD_MAX_LEN + 1], int qty) {
     sem = sem_open(sem_name, O_CREAT, 0666, 1);
     cnd = sem_open(cnd_name, O_CREAT,0666, 0);
 
-    TCHK(sem_wait(sem)); // wait for possible producer or consumer
+    TCHK(sem_wait(sem)); // attendre un venduer ou producer or consumer
 
     CHK(fd = open(prd, O_RDWR | O_CREAT, 0666));
 
@@ -97,7 +95,11 @@ int main(int argc, char *argv[]) {
     /* checking command line arguments */
 
     char prd[PRD_MAX_LEN + 1];
-    set_prd(prd, "%s", argv[1]);
+    
+    strcpy(prd, argv[1]);    
+    prd[PRD_MAX_LEN] = '\0';
+
+    
 
     int qty = atoi(argv[2]);
     if (qty < 0) {
@@ -108,7 +110,7 @@ int main(int argc, char *argv[]) {
 
     switch (qty) {
     case 0:
-        close_shop(prd);
+        fermer_magazin(prd);
         break;
     default:
         add_to_shop(prd, qty);

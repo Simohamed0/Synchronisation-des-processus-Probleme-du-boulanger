@@ -46,23 +46,8 @@ struct magazin {
  */
 noreturn void raler(int syserr, const char *msg, ...);
 
-/**
- * @brief safe call to snprintf.
- *
- * @param str string to write to
- * @param size size of the string
- * @param fmt formated message to print
- */
-void snprintf_s(char *restrict str, size_t size, const char *restrict fmt, ...);
 
 
-/**
- * @brief set a product name from command line arguments.
- *
- * @param prd product name to set
- * @param fmt suitable format string (max `PRD_MAX_LEN` characters)
- */
-void set_prd(char *restrict prd, const char *restrict fmt, ...);
 
 /**
  * @brief set a semaphore name from a product name.
@@ -74,17 +59,6 @@ void set_prd(char *restrict prd, const char *restrict fmt, ...);
 void set_sem(int id, char *restrict sem_name, char *restrict fmt, ...);
       
 
-/**
- * @brief copies the string pointed to by src, including the terminating null
- * byte ('\0')
- *
- * @param dest destination string
- * @param src source string
- * @param n number of characters to copy
- * @return size_t - the number of characters copied, not including the
- * terminating null byte
- */
-size_t strlcpy(char *restrict dest, const char *restrict src, size_t n);
 
 /**
  * @brief initialise magazin structure.

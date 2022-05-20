@@ -34,46 +34,47 @@ int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qty, int n) {
 
 
 /**
- * @brief buy a product from the magazin.
+ * @brief achter un produit du magazin.
  *
- * @param prd product name
- * @param qty quantity to buy
- * @return int - number of products bought
+ * @param prd nom du produit
+ * @param qty quantite a acheter
+ * @return  nombre de prd restant
  */
 int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) {
     
-    int fd, n, next = 0, num = 0;
+    int fd, n, suivant = 0, num = 0;
     struct magazin s;
     magazin_init(&s);
 
     CHK(fd = open(prd, O_RDWR, 0666));
 
-    // named semaphore, created if not existing
-    char sem_name[SEM_MAX_LEN + 1], cnd_name[SEM_MAX_LEN + 1];
-    set_sem(0, sem_name, prd);
-    set_sem(1, cnd_name, prd);
+    // creation des semaphores
+    char sem_file_name[SEM_MAX_LEN + 1]; 
+    char sem_name[SEM_MAX_LEN + 1];
+    
+    set_sem(0, sem_file_name, prd);
+    set_sem(1, sem_name, prd);
 
-    sem_t *sem, *cnd; // file protection, condition
+    sem_t *sem_file, *sem; // file protection, condition
 
-    // these should be created when the magazin is opened
-    // if the magazin does not exist, we should raler anyway
+    //ouverture des semaphores
+    sem_file = sem_open(sem_file_name, 0, 0666);
     sem = sem_open(sem_name, 0, 0666);
-    cnd = sem_open(cnd_name, 0, 0666);
 
-    if ( sem == SEM_FAILED || cnd == SEM_FAILED ) 
+    if ( sem_file== SEM_FAILED || sem == SEM_FAILED ) 
     {
         raler(1, "sem_open failure");
     }
 
-    TCHK(sem_wait(cnd)); // wait for the condition
-    TCHK(sem_wait(sem)); // wait for possible producer or consumer
+    TCHK(sem_wait(sem)); 
+    TCHK(sem_wait(sem_file)); 
 
   
 
     CHK(n = read(fd, &s, sizeof(s)));
 
     if (n == 0) {
-        next = 1; // allow the next consumer to raler
+        suivant = 1; // pour que le client suivant rale
         num = -1;
     } else if (n != sizeof(s)) {
         raler(0, "file %s corrupted", prd);
@@ -89,19 +90,19 @@ int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) {
         } 
         s.qty -= num;
 
-        next = 1; // allow the next consumer in
+        suivant = 1; // 
         CHK(write(fd, &s, sizeof(s)));
     }
 
     CHK(close(fd));
 
-    TCHK(sem_post(sem)); // unlock potential new producer or consumer
-    if (next) {
-        TCHK(sem_post(cnd));
+    TCHK(sem_post(sem_file)); // unlock potential new producer or consumer
+    if (suivant) {
+        TCHK(sem_post(sem));
     }
 
-    CHK(sem_close(sem)); // close the semaphore
-    CHK(sem_close(cnd));
+    CHK(sem_close(sem_file)); // close the semaphore
+    CHK(sem_close(sem));
 
     return num;
 }
@@ -123,7 +124,9 @@ int main(int argc, char *argv[]) {
     int qty[n];                   // quantities
 
     for (int i = 0; i < n; i++) {
-        set_prd(prd[i], "%s", argv[i * 2 + 1]);
+        
+        strcpy(prd[i], argv[i * 2 + 1]);
+        prd[i][PRD_MAX_LEN] = '\0';
         qty[i] = atoi(argv[i * 2 + 2]);
         if (qty[i] < 0) {
             raler(0, "quantity must be positive");
