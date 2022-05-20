@@ -33,7 +33,7 @@
  */
 struct magazin {
 
-    int qty; // quantity of the product
+    int qtn; // quantity of the product
 };
 
 
@@ -67,28 +67,28 @@ void set_sem(int type,  char *sem_name, char *prod);
  * @brief grouper les produits .
  *
  * @param prd liste des noms des produits
- * @param qty liste des quantités
+ * @param qtn liste des quantités
  * @param n nombre de produits
  * @return nombre de produits
  */
-int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qty, int n);
+int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qtn, int n);
 
 /**
  * @brief acheter un produit du magazin.
  *
  * @param prd nom du produit
- * @param qty quantite a acheter
+ * @param qtn quantite a acheter
  * @return  nombre de prd restant
  */
-int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) ;
+int acheter_prod(char prd[PRD_MAX_LEN + 1], int qtn) ;
 
 /**     
  * @brief loop principale pour chaque produit on achete si le magazin est ouvert et que le stock le permet sinon on attend
  * @param prd nom des produit
- * @param qty quantite a acheter par produit
+ * @param qtn quantite a acheter par produit
  * @param nb_prod nombre de produit
  */
-void shopping(char (*prd)[PRD_MAX_LEN + 1], int *qty , int n);
+void shopping(char (*prd)[PRD_MAX_LEN + 1], int *qtn , int n);
 
 
 ///// vendeur.c ////////////////////////////////////////////////////////////////////////
@@ -97,9 +97,9 @@ void shopping(char (*prd)[PRD_MAX_LEN + 1], int *qty , int n);
  * @brief ajouter un produit au magazin
  *
  * @param prd nom du produit
- * @param qty quantite du produit
+ * @param qtn quantite du produit
  */
-void ajouter_produit(char prd[PRD_MAX_LEN + 1], int qty);
+void ajouter_produit(char prd[PRD_MAX_LEN + 1], int qtn);
 
 /**
  * @brief supprimer le contenue et supprimer le magazin 

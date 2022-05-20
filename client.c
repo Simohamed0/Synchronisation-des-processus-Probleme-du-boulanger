@@ -16,21 +16,21 @@ int main(int argc, char *argv[]) {
     n /= 2; // nombre de produits
 
     char prd[n][PRD_MAX_LEN + 1]; // nom des produits
-    int qty[n];                   // quantitees
+    int qtn[n];                   // quantitees
 
     for (int i = 0; i < n; i++) {
         
         strcpy(prd[i], argv[i * 2 + 1]);
         prd[i][PRD_MAX_LEN] = '\0';
-        qty[i] = atoi(argv[i * 2 + 2]);
+        qtn[i] = atoi(argv[i * 2 + 2]);
         
-        if (qty[i] < 0) 
+        if (qtn[i] < 0) 
         {
             raler(0, "quantity must be positive");
         }
     }
-    n = grouper_par_produit(prd, qty, n);
-    shopping(prd, qty, n);
+    n = grouper_par_produit(prd, qtn, n);
+    shopping(prd, qtn, n);
     
 
     return 0;

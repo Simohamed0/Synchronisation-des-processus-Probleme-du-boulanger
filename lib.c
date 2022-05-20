@@ -1,5 +1,15 @@
 #include "lib.h"
 
+
+
+// note : j'ai ajouter rm -r -f /dev/shm/sem.* après chaque test dans test2.sh pour supprimer les semaphores après chaque test
+
+
+
+
+
+
+
 noreturn void raler(int syserr, const char * msg, ...) {
     va_list ap;
 
@@ -34,11 +44,11 @@ void set_sem(int type,  char *sem_name, char *prod){
 
 void magazin_init(struct magazin *s) {
     
-    s->qty = 0;
+    s->qtn = 0;
 }
 ////////////////// client.c ///////////////////////////////////
 
-int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qty, int n) {
+int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qtn, int n) {
     
     int i, j, l;
     for (i = 0; i < n; i++) 
@@ -47,10 +57,10 @@ int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qty, int n) {
         {
             if (strcmp(prd[i], prd[j]) == 0) 
             {    
-                qty[i] += qty[j];   
+                qtn[i] += qtn[j];   
                 for (l = j; l < n - 1; l++) 
                 {    
-                    qty[l] = qty[l + 1];
+                    qtn[l] = qtn[l + 1];
                 }
                 n--;
                 j--;
@@ -62,7 +72,7 @@ int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qty, int n) {
 
 
 
-int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) {
+int acheter_prod(char prd[PRD_MAX_LEN + 1], int qtn) {
     
     int fd, n, suivant = 0, num = 0;
     struct magazin s;
@@ -101,14 +111,14 @@ int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) {
     } 
     CHK(lseek(fd, 0, SEEK_SET)); 
 
-    if (n == sizeof(s) && s.qty > 0)
+    if (n == sizeof(s) && s.qtn > 0)
     {
-        num =s.qty;
-        if (num > qty)
+        num =s.qtn;
+        if (num > qtn)
         {
-            num = qty;
+            num = qtn;
         } 
-        s.qty -= num;
+        s.qtn -= num;
 
         suivant = 1; // 
         CHK(write(fd, &s, sizeof(s)));
@@ -117,6 +127,7 @@ int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) {
     CHK(close(fd));
 
     TCHK(sem_post(sem_file)); // deverouiller un client ou un venduer potentiel
+    
     if (suivant) 
     {
         TCHK(sem_post(sem));
@@ -129,12 +140,12 @@ int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) {
 }
 
 
-void shopping(char (*prd)[PRD_MAX_LEN + 1], int *qty , int n) {
+void shopping(char (*prd)[PRD_MAX_LEN + 1], int *qtn , int n) {
     
     int i, qty_copy, num;
     for (i = 0; i < n; i++) 
     {
-        qty_copy = qty[i];
+        qty_copy = qtn[i];
         while (qty_copy> 0) 
         {
             num = acheter_prod(prd[i], qty_copy);
@@ -183,7 +194,7 @@ void fermer_magazin(char prd[PRD_MAX_LEN + 1]) {
 }
 
 
-void ajouter_produit(char prd[PRD_MAX_LEN + 1], int qty) {
+void ajouter_produit(char prd[PRD_MAX_LEN + 1], int qtn) {
     
     int fd, n;
     struct magazin s;
@@ -210,7 +221,7 @@ void ajouter_produit(char prd[PRD_MAX_LEN + 1], int qty) {
 
     if ((n = read(fd, &s, sizeof(s))) == 0) 
     {
-        s.qty = 0;
+        s.qtn = 0;
     } 
     if (n == -1) 
     {
@@ -218,7 +229,7 @@ void ajouter_produit(char prd[PRD_MAX_LEN + 1], int qty) {
     } 
 
 
-    s.qty += qty;
+    s.qtn += qtn;
     CHK(lseek(fd, 0, SEEK_SET)); 
     CHK(write(fd, &s, sizeof(s)));
 
