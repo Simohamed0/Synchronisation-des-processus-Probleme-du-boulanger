@@ -15,34 +15,27 @@ noreturn void raler(int syserr, const char * msg, ...) {
     exit(EXIT_FAILURE);
 }
 
-
-
-void set_sem(int id, char *restrict sem_name, char *restrict msg, ...) {
-    int n;
-    char p[PRD_MAX_LEN + 1];
-    va_list ap;
-
-    va_start(ap, msg);
-    if ((n = vsnprintf(p, PRD_MAX_LEN + 1, msg, ap)) > PRD_MAX_LEN) {
-        raler(0, "product name too long");
+void set_sem(int type,  char *sem_name, char *prod){
+    
+    char *suffixe;
+    switch(type)
+    {
+        case 0:
+            suffixe = "file";
+            break;
+        case 1:
+            suffixe = "nofi";
+            break;
     }
-    if (n < 0) {
-        raler(0, "vsnprintf failure");
-    }
-    va_end(ap);
+    strcpy(sem_name, prod);
+    strcat(sem_name, suffixe);
 
-    p[PRD_MAX_LEN] = '\0';
-    snprintf(sem_name, SEM_MAX_LEN + 1, "%s.%d", p, id);
-
-    sem_name[SEM_MAX_LEN] = '\0';
 }
-
 
 void magazin_init(struct magazin *s) {
     
     s->qty = 0;
 }
-
 ////////////////// client.c ///////////////////////////////////
 
 int grouper_par_produit(char (*prd)[PRD_MAX_LEN + 1], int *qty, int n) {
@@ -78,13 +71,14 @@ int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) {
     CHK(fd = open(prd, O_RDWR, 0666));
 
     // creation des semaphores
+
     char sem_file_name[SEM_MAX_LEN + 1]; 
     char sem_name[SEM_MAX_LEN + 1];
     
     set_sem(0, sem_file_name, prd);
     set_sem(1, sem_name, prd);
 
-    // deux sempahores un pour le fichier 
+    // deux sempahores 
     sem_t *sem_file, *sem; 
 
     //ouverture des semaphores
@@ -99,21 +93,16 @@ int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) {
     TCHK(sem_wait(sem)); 
     TCHK(sem_wait(sem_file)); 
 
-  
-
     CHK(n = read(fd, &s, sizeof(s)));
-
     if (n == 0) 
     {
         suivant = 1; // pour que le client suivant rale
         num = -1;
     } 
-
     CHK(lseek(fd, 0, SEEK_SET)); 
 
     if (n == sizeof(s) && s.qty > 0)
     {
-        
         num =s.qty;
         if (num > qty)
         {
@@ -160,3 +149,85 @@ void shopping(char (*prd)[PRD_MAX_LEN + 1], int *qty , int n) {
 
 /////////////////// magazin.c //////////////////////////////
 
+
+void fermer_magazin(char prd[PRD_MAX_LEN + 1]) {
+    
+    int fd;
+
+    //  creation des semaphores
+    char sem_file_name[SEM_MAX_LEN + 1], sem_name[SEM_MAX_LEN + 1];
+    set_sem(0, sem_file_name, prd);
+    set_sem(1, sem_name, prd);
+
+    sem_t *sem_file, *sem; 
+    sem_file = sem_open(sem_file_name, O_CREAT, 0666, 1);
+    sem = sem_open(sem_name, O_CREAT, 0666, 0);
+
+    // attendre un producteur ou un client 
+    TCHK(sem_wait(sem_file)); 
+
+    CHK(fd = open(prd, O_RDWR | O_TRUNC, 0666)); 
+    CHK(close(fd));                             
+    CHK(unlink(prd));                            
+
+    // deverouiller un client ou un vendeur
+    TCHK(sem_post(sem_file)); 
+    TCHK(sem_post(sem)); 
+
+    //  fermer et effacer les semaphores
+    CHK(sem_close(sem_file)); 
+    CHK(sem_close(sem));
+    CHK(sem_unlink(sem_file_name)); 
+    CHK(sem_unlink(sem_name));
+
+}
+
+
+void ajouter_produit(char prd[PRD_MAX_LEN + 1], int qty) {
+    
+    int fd, n;
+    struct magazin s;
+    magazin_init(&s);
+
+    // creation des semphores
+    char sem_file_name[SEM_MAX_LEN + 1], sem_name[SEM_MAX_LEN + 1];
+    set_sem(0, sem_file_name, prd);
+    set_sem(1, sem_name, prd);
+
+    sem_t *sem_file, *sem; 
+    sem_file = sem_open(sem_file_name, O_CREAT, 0666, 1);
+    sem = sem_open(sem_name, O_CREAT,0666, 0);
+
+    if(sem_file == SEM_FAILED || sem_file == SEM_FAILED) 
+    {
+        raler(1, "sem_open failure");
+    }
+
+    TCHK(sem_wait(sem_file)); // attendre un vendeur ou producer or consumer
+
+    CHK(fd = open(prd, O_RDWR | O_CREAT, 0666));
+
+
+    if ((n = read(fd, &s, sizeof(s))) == 0) 
+    {
+        s.qty = 0;
+    } 
+    if (n == -1) 
+    {
+        raler(1, "read");
+    } 
+
+
+    s.qty += qty;
+    CHK(lseek(fd, 0, SEEK_SET)); 
+    CHK(write(fd, &s, sizeof(s)));
+
+    CHK(close(fd));
+
+    TCHK(sem_post(sem_file)); // deverouiller un client ou un vendeur potentiel
+    TCHK(sem_post(sem)); 
+
+    CHK(sem_close(sem_file)); // fermer la semaphore
+    CHK(sem_close(sem));
+
+}

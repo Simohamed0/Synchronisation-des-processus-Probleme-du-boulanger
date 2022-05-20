@@ -23,7 +23,9 @@ int main(int argc, char *argv[]) {
         strcpy(prd[i], argv[i * 2 + 1]);
         prd[i][PRD_MAX_LEN] = '\0';
         qty[i] = atoi(argv[i * 2 + 2]);
-        if (qty[i] < 0) {
+        
+        if (qty[i] < 0) 
+        {
             raler(0, "quantity must be positive");
         }
     }

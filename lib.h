@@ -12,9 +12,7 @@
 #include <unistd.h>
 
 #define PRD_MAX_LEN 10 // longueur maximal du nom du produit
-#define SEM_DFF_LEN 3  // longueur maximal du nom du semaphore
-
-#define SEM_MAX_LEN PRD_MAX_LEN + SEM_DFF_LEN
+#define SEM_MAX_LEN (PRD_MAX_LEN+4) // longueur maximal du nom du semaphore
 
 
 #define CHK(op)            \
@@ -55,13 +53,13 @@ noreturn void raler(int syserr, const char *msg, ...);
 
 
 /**
- * @brief set a semaphore name from a product name.
+ * @brief initialiser le nom d'un semaphore.
  *
- * @param id suffixe id (max `SEM_DFF_LEN` characters)
- * @param sem_name semaphore name to set
- * @param fmt formated product name (max `PRD_MAX_LEN` characters)
+ * @param id type du semaphore
+ * @param sem_name nom du semaphore 
+ * @param fprod nom du produit
  */
-void set_sem(int id, char *restrict sem_name, char *restrict fmt, ...);
+void set_sem(int type,  char *sem_name, char *prod);
 
 
 // pour client.c ////////////////////////////////////////////////////////////////////////   
@@ -92,3 +90,20 @@ int acheter_prod(char prd[PRD_MAX_LEN + 1], int qty) ;
  */
 void shopping(char (*prd)[PRD_MAX_LEN + 1], int *qty , int n);
 
+
+///// vendeur.c ////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief ajouter un produit au magazin
+ *
+ * @param prd nom du produit
+ * @param qty quantite du produit
+ */
+void ajouter_produit(char prd[PRD_MAX_LEN + 1], int qty);
+
+/**
+ * @brief supprimer le contenue et supprimer le magazin 
+ *
+ * @param prd nom du produit
+ */
+void fermer_magazin(char prd[PRD_MAX_LEN + 1]);
